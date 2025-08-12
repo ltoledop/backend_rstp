@@ -51,7 +51,37 @@ cp env.example .env
 python server.py
 ```
 
-## 🌐 Despliegue en Railway.app
+## 🌐 Despliegue en Render.com (GRATUITO)
+
+### 1. Crear cuenta en Render
+- Ir a [render.com](https://render.com)
+- Conectar con GitHub (gratis)
+
+### 2. Conectar repositorio
+- Seleccionar este repositorio
+- Render detectará automáticamente Python
+- Usar archivo `render.yaml` para configuración
+
+### 3. Configurar variables de entorno
+En Render Dashboard → Environment:
+```
+RTSP_URL=rtsp://admin:password@ip:port/stream
+RTSP_USERNAME=admin
+RTSP_PASSWORD=tu_password
+RTSP_IP=tu_ip_camara
+RTSP_PORT=555
+RTSP_WIDTH=1280
+RTSP_HEIGHT=720
+RTSP_FPS=25
+SECRET_KEY=rtsp-viewer-secret-key-2024
+```
+
+### 4. Desplegar
+- Render construirá automáticamente
+- URL disponible en el dashboard
+- **¡Completamente gratuito para siempre!**
+
+## 🌐 Despliegue Alternativo en Railway.app
 
 ### 1. Crear cuenta en Railway
 - Ir a [railway.app](https://railway.app)
@@ -74,6 +104,7 @@ RTSP_PORT=555
 ### 4. Desplegar
 - Railway construirá automáticamente
 - URL disponible en el dashboard
+- **⚠️ Plan gratuito limitado a 30 días**
 
 ## 🔌 API Endpoints
 
@@ -125,6 +156,7 @@ RTSP_PORT=555
 backend/
 ├── server.py          # Servidor principal
 ├── requirements.txt   # Dependencias Python
+├── render.yaml        # Configuración Render.com
 ├── Procfile          # Configuración Railway
 ├── env.example       # Variables de entorno ejemplo
 └── README.md         # Este archivo
@@ -134,7 +166,7 @@ backend/
 
 | Variable | Descripción | Valor por Defecto |
 |----------|-------------|-------------------|
-| `PORT` | Puerto del servidor | `5000` |
+| `PORT` | Puerto del servidor | `10000` (Render) / `5000` (Local) |
 | `SECRET_KEY` | Clave secreta Flask | `rtsp-viewer-secret-key-2024` |
 | `RTSP_URL` | URL completa RTSP | Configuración de ejemplo |
 | `RTSP_USERNAME` | Usuario cámara | `admin` |
@@ -169,6 +201,19 @@ PORT=5001
 - Verificar IP y puerto de la cámara
 - Confirmar credenciales
 - Verificar conectividad de red
+
+### Error: "Build failed in Render"
+- Verificar que `requirements.txt` tenga las dependencias correctas
+- Verificar archivo `render.yaml`
+
+## 📊 Comparación de Hosting
+
+| Servicio | Plan Gratuito | Python | WebSockets | SSL | Deploy |
+|----------|---------------|---------|------------|-----|---------|
+| **Render.com** | ✅ **Siempre** | ✅ | ✅ | ✅ | ✅ |
+| Railway.app | ❌ 30 días | ✅ | ✅ | ✅ | ✅ |
+| PythonAnywhere | ✅ **Siempre** | ✅ | ⚠️ | ✅ | ⚠️ |
+| Heroku | ✅ Limitado | ✅ | ✅ | ✅ | ✅ |
 
 ## 📞 Soporte
 
