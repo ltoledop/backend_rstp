@@ -41,8 +41,17 @@ stream_lock = threading.Lock()
 # Configurar Flask con CORS
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'rtsp-viewer-secret-key-2024')
-CORS(app, origins="*")  # Permitir todas las origenes para desarrollo
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+CORS(app, origins="*", supports_credentials=True)  # Permitir todas las origenes para desarrollo
+
+# Configurar SocketIO para Render.com
+socketio = SocketIO(
+    app, 
+    cors_allowed_origins="*", 
+    async_mode='eventlet',
+    ping_timeout=60,
+    ping_interval=25,
+    transports=['websocket', 'polling']
+)
 
 def get_camera_status():
     """Obtener estado actual de la cámara"""
