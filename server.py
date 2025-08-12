@@ -28,7 +28,8 @@ CAMERA_CONFIG = {
     'ip': os.getenv('RTSP_IP', '181.115.147.116'),
     'port': int(os.getenv('RTSP_PORT', '555')),
     'resolution': (int(os.getenv('RTSP_WIDTH', '1280')), int(os.getenv('RTSP_HEIGHT', '720'))),
-    'fps': int(os.getenv('RTSP_FPS', '25'))
+    'fps': int(os.getenv('RTSP_FPS', '30')),  # Aumentar FPS por defecto
+    'mjpeg_fps': int(os.getenv('MJPEG_FPS', '30'))  # FPS específico para MJPEG
 }
 
 # Variables globales del stream
@@ -121,10 +122,14 @@ def camera_stream_thread():
         
         print("✅ Cámara RTSP conectada exitosamente")
         
-        # Configurar propiedades
+        # Configurar propiedades para mejor rendimiento
         camera_cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_CONFIG['resolution'][0])
         camera_cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_CONFIG['resolution'][1])
         camera_cap.set(cv2.CAP_PROP_FPS, CAMERA_CONFIG['fps'])
+        
+        # Optimizaciones para mejor rendimiento
+        camera_cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Buffer mínimo
+        camera_cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('H', '2', '6', '4'))  # Codec H.264
         
         frame_count = 0
         start_time = time.time()
@@ -142,12 +147,17 @@ def camera_stream_thread():
                 if frame_count % CAMERA_CONFIG['fps'] == 0:
                     elapsed = time.time() - start_time
                     fps = frame_count / elapsed
-                    print(f"📊 FPS: {fps:.1f}, Frames: {frame_count}")
+                    print(f"📊 FPS: {fps:.1f}, Frames: {frame_count}, Delay: {frame_delay:.3f}s")
+                    
+                    # Ajustar FPS dinámicamente si es muy bajo
+                    if fps < CAMERA_CONFIG['fps'] * 0.8:  # Si FPS es menor al 80% del esperado
+                        frame_delay = max(0.01, frame_delay * 0.9)  # Reducir delay
+                        print(f"⚡ Ajustando delay a: {frame_delay:.3f}s")
                 
                 # Enviar frame a clientes WebSocket
                 try:
-                    # Convertir frame a JPEG
-                    ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                    # Convertir frame a JPEG con calidad optimizada
+                    ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 75])
                     if ret:
                         frame_data = buffer.tobytes()
                         socketio.emit('video_frame', {
@@ -158,11 +168,12 @@ def camera_stream_thread():
                 except Exception as e:
                     print(f"⚠️ Error enviando frame: {e}")
                 
-                # Control de FPS
-                time.sleep(1.0 / CAMERA_CONFIG['fps'])
+                # Control de FPS optimizado
+                frame_delay = 1.0 / CAMERA_CONFIG['fps']
+                time.sleep(frame_delay)
             else:
                 print("⚠️ Frame no válido recibido")
-                time.sleep(0.1)
+                time.sleep(0.01)  # Reducir delay para frames inválidos
         
         print("📹 Hilo de cámara terminado")
         
@@ -326,14 +337,15 @@ def generate_mjpeg():
                 cv2.putText(frame, 'Sin Video', (200, 240), 
                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         
-        # Convertir a JPEG
-        ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        # Convertir a JPEG con calidad optimizada para MJPEG
+        ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
         if ret:
             frame_data = buffer.tobytes()
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame_data + b'\r\n')
         
-        time.sleep(1.0 / CAMERA_CONFIG['fps'])
+        # Optimizar delay para MJPEG
+        time.sleep(0.033)  # ~30 FPS para MJPEG
 
 @app.route('/video_feed')
 def video_feed():
